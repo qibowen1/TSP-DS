@@ -1,7 +1,5 @@
 # TSP-DS
 
-如果你想写成更简洁版，也可以只放这一段：
-
 ```markdown
 ## Build and Run
 
