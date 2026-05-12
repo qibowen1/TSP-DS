@@ -1,0 +1,49 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="DroneSchedulerCombine.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="TSPHeuristics.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="TwoPhaseMatheuristic.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="SetPartitioningPolisher.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="main_two_phase.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="源文件">
+      <UniqueIdentifier>{a67379f9-a8f5-491e-8c05-d190fd291ed0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件">
+      <UniqueIdentifier>{2aec6d82-3c59-4e78-91f8-a6c3944180a3}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="MTSPDSGraph.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="MTSPDSSolution.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="DroneSchedulerCombine.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="TSPHeuristics.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="TwoPhaseMatheuristic.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="SetPartitioningPolisher.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
