@@ -1,5 +1,5 @@
 Input format:
-
+```
 N q m s
 
 customer_1 customer_2 ... customer_q
@@ -15,7 +15,7 @@ drone_eligible_1 ... drone_eligible_d
 truck_time_matrix N x N
 
 drone_time_matrix N x N
-
+```
 Node meaning:
 - depot is node 0
 - drone station is node s
