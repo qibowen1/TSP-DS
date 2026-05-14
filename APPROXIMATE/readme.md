@@ -1,12 +1,19 @@
 Input format:
 
 N q m s
+
 customer_1 customer_2 ... customer_q
+
 g
+
 truck_only_1 ... truck_only_g
+
 d
+
 drone_eligible_1 ... drone_eligible_d
+
 truck_time_matrix N x N
+
 drone_time_matrix N x N
 
 Node meaning:
