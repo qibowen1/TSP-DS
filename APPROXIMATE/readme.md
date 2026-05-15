@@ -26,5 +26,5 @@ g++ -std=c++17 -O2 appro.cpp -o appro
 
 Run:
 ```
-./appro ./data/[dataset name].csv [#drones] [truck travel cost, 1 by default] [drone travel cost, 0.5 by default] [result file name].csv
+./appro ./data/[dataset name].csv [#drones] [truck travel time/per mile, 1 by default] [drone travel time/per mile, 0.5 by default] [result file name].csv
 ```
