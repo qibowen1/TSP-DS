@@ -1,23 +1,10 @@
-Input format:
-```
-N q m s
-customer_1 customer_2 ... customer_q
-g
-truck_only_1 ... truck_only_g
-d
-drone_eligible_1 ... drone_eligible_d
-truck_time_matrix N x N
-drone_time_matrix N x N
-```
-Node meaning:
-- depot is node 0
-- drone station is node s
-- C is the customer set
-- Cg is the truck-only customer set
-- Cd is the drone-eligible customer set
-- tg[i][j] is truck travel time
-- td[i][j] is one-way drone travel time from i to j
-- each drone delivery is a round trip, so its processing time is 2 * td[s][j]
+Input format: a csv file
+- column 1: node ID
+- column 2: x-coordinate of node
+- column 3: y-coordinate of node
+- column 4: customer type,  0: drone-eligible customer; 1: truck-only customer;2: drone station.
+- both the first node and last node represent the same depot node
+
 
 Compile:
 ```
