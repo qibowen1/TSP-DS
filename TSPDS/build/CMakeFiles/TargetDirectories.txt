@@ -1,0 +1,3 @@
+/home/qbw/projects/TSPDS/build/CMakeFiles/TSPDS.out.dir
+/home/qbw/projects/TSPDS/build/CMakeFiles/edit_cache.dir
+/home/qbw/projects/TSPDS/build/CMakeFiles/rebuild_cache.dir

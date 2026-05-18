@@ -1347,9 +1347,9 @@ void processTSPFile(const string& filepath,
 
 int main() {
     std::mutex result_mutex;      // 保护 CSV 写入
-    const int NUM_REPEATS = 1;     // 并行重复次数
+    const int NUM_REPEATS = 20;     // 并行重复次数
     // ========== 进程数==========
-    int WORKERS = 1;
+    int WORKERS = 20;
     if (WORKERS < 1) WORKERS = 1;
 
     // 定义无人机数量数组
@@ -1357,7 +1357,7 @@ int main() {
     vector<string> depot_positions = { "L" }; // "1" "C", "L"
     bool isSmallInstance = false; // Murray小实例=true；TSPLIB=false
     bool isRunF2Cplex = false; // 是否运行 F2 求解 Exact
-    bool isRunBenders = true; // 是否运行 Benders 求解 Exact
+    bool isRunBenders = false; // 是否运行 Benders 求解 Exact
 
     // ✅ 相对路径：以“程序工作目录”为基准  
     fs::path input_dir = fs::path("data") / "tsp_origan";

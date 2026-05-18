@@ -9,7 +9,7 @@ struct TSPDSAlgorithmParams {
 
 	int common_size = 100;
 
-	int max_run_time = 10; // 单位：秒
+	int max_run_time = 1200; // 单位：秒
 
     double golbal_attemp_per_truck = 0.4;
     double golbal_attemp_per_drone = 0.4;

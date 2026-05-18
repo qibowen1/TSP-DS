@@ -126,7 +126,6 @@ TSPDSSolution TSPDSSolver::solve(double F2Best) {
             currentSolution = localSolution;
 
             if (currentSolution.makespan < bestSolution.makespan) {
-                // 尝试进一步优化卡车路径和无人机调度
                 utils.optimizeTruckRouteWithLKHIntern(currentSolution);
                 TSPDSSolution temp = currentSolution;
                 //utils.evaluateSolutionExactDroneByCplex(temp);
@@ -180,7 +179,6 @@ TSPDSSolution TSPDSSolver::solve(double F2Best) {
     }
 
     bestSolution.total_iter = iteration;
-    // 最终对最优解做一次强化优化（时间允许范围内）
     utils.optimizeTruckRouteWithLKHIntern(bestSolution);
     //utils.evaluateSolutionExactDroneByCplex(bestSolution);
     return bestSolution;
