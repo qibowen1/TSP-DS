@@ -8,9 +8,9 @@ In Linux/Ubuntu operating system, enter the executable directory and run the pro
 ```bash
 
 # Enter the project directory
-# data放在TSP-DS-main/TSPDS/data/tsp_origan 下
+# data放在TSP-DS/TSPDS/data/tsp_origan 下
 #RUN TSP-DS
-cd TSP-DS-main/TSPDS
+cd TSP-DS/TSPDS
 
 # Configure and build
 rm -rf build
@@ -25,7 +25,7 @@ cmake --build build -j$(nproc)
 
 #RUN MTSPDS
 # Enter the project directory
-cd MTSPDS
+cd TSP-DS/MTSPDS
 
 # Configure and build
 rm -rf build
