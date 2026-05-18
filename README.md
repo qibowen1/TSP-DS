@@ -38,16 +38,5 @@ cmake --build build -j$(nproc)
 
 ./build/bin/MTSPDS.out
 
-#RUN APPROXIMATE
-Compile:
-```
-g++ -std=c++17 -O2 appro.cpp -o appro
-```
-
-Run:
-```
-./appro ./data/[dataset name].csv [#drones] [truck travel time/per mile, 1 by default] [drone travel time/per mile, 0.5 by default] [result file name].csv
-```
-
 #data url 通过网盘分享的文件：data.zip链接: https://pan.baidu.com/s/1I21oIH5Q6w6E5WzYzk1TZA?pwd=stjj 提取码: stjj
 
