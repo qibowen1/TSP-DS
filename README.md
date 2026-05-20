@@ -1,12 +1,6 @@
-# TSP-DS
-
-```markdown
-## Build and Run
-
+# Build and Run MNS
 In Linux operating system, enter the project directory, put the dataset into TSP-DS/TSPDS/data/tsp_origan, and run the program as follows:
-
-```bash
-# to run TSP-DS
+```
 cd TSP-DS/TSPDS
 
 rm -rf build
@@ -18,8 +12,10 @@ cmake -S . -B build \
 cmake --build build -j$(nproc)
 
 ./build/bin/TSPDS.out
+```
 
-#to run TPLS
+# Build and Run TPLS
+```
 cd TSP-DS/MTSPDS
 
 rm -rf build
@@ -31,5 +27,5 @@ cmake -S . -B build \
 cmake --build build -j$(nproc)
 
 ./build/bin/MTSPDS.out
-
+```
 
