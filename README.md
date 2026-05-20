@@ -14,6 +14,14 @@ cmake --build build -j$(nproc)
 ./build/bin/TSPDS.out
 ```
 
+# Build and Run Appro
+Compile:
+```
+g++ -std=c++17 -O2 appro.cpp -o appro
+
+./appro ./data/[dataset name].csv [#drones] [truck travel time/per mile, 1 by default] [drone travel time/per mile, 0.5 by default] [result file name].csv
+```
+
 # Build and Run TPLS
 In Linux operating system, enter the project directory, put the dataset into TSP-DS/MTSPDS/data/tsp_origan, and run the program as follows:
 ```
