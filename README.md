@@ -10,7 +10,7 @@ In this paper, we first propose a fast approximation algorithm, named Appro. Bas
 MNS consistently outperforms existing approaches in solution quality, and it effectively provides solutions for instances with more than 1,000 customer nodes, a task at which all other known methods exhibit substantially inferior performance or even fail.  Meanwhile, Appro quickly produces feasible solutions with a provable approximation guarantee. 
 
 <p align="center">
-  <img src="https://github.com/qibowen1/TSP-DS/tree/main/TSPDS%20problem.png?raw=true"  alt="Sublime's custom image" />
+  <img src="https://github.com/qibowen1/TSP-DS/blob/main/TSPDS%20problem.png?raw=true"  alt="Sublime's custom image" />
 </p>
 
 This project contains three folders which contain three algorithms: MNS (TSPDS folder), Appro (APPROXIMATE folder) and TPLS (MTSPDS folder).
