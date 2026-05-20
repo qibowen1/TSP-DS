@@ -3,16 +3,12 @@
 ```markdown
 ## Build and Run
 
-In Linux operating system, enter the executable directory and run the program as follows:
+In Linux operating system, enter the project directory, put the dataset into TSP-DS/TSPDS/data/tsp_origan, and run the program as follows:
 
 ```bash
-
-# Enter the project directory
-# put the dataset into TSP-DS/TSPDS/data/tsp_origan
-#RUN TSP-DS
+# to run TSP-DS
 cd TSP-DS/TSPDS
 
-# Configure and build
 rm -rf build
 
 cmake -S . -B build \
@@ -23,11 +19,9 @@ cmake --build build -j$(nproc)
 
 ./build/bin/TSPDS.out
 
-#RUN MTSPDS
-# Enter the project directory
+#to run TPLS
 cd TSP-DS/MTSPDS
 
-# Configure and build
 rm -rf build
 
 cmake -S . -B build \
@@ -38,5 +32,4 @@ cmake --build build -j$(nproc)
 
 ./build/bin/MTSPDS.out
 
-#Dataset URL: https://pan.baidu.com/s/1I21oIH5Q6w6E5WzYzk1TZA?pwd=stjj password: stjj
 
