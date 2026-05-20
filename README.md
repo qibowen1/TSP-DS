@@ -15,6 +15,7 @@ cmake --build build -j$(nproc)
 ```
 
 # Build and Run TPLS
+In Linux operating system, enter the project directory, put the dataset into TSP-DS/MTSPDS/data/tsp_origan, and run the program as follows:
 ```
 cd TSP-DS/MTSPDS
 
