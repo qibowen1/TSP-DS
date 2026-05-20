@@ -23,7 +23,7 @@ rm -rf build
 
 cmake -S . -B build \
   -DCMAKE_BUILD_TYPE=Release \
-  -DCPLEX_ROOT=/path/to/CPLEX_Studio201
+  -DCPLEX_ROOT=/path/to/CPLEX_Studio1201
 
 cmake --build build -j$(nproc)
 
