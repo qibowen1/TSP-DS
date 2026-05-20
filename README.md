@@ -3,12 +3,12 @@
 ```markdown
 ## Build and Run
 
-In Linux/Ubuntu operating system, enter the executable directory and run the program as follows:
+In Linux operating system, enter the executable directory and run the program as follows:
 
 ```bash
 
 # Enter the project directory
-# data放在TSP-DS/TSPDS/data/tsp_origan 下
+# put the dataset into TSP-DS/TSPDS/data/tsp_origan
 #RUN TSP-DS
 cd TSP-DS/TSPDS
 
@@ -17,7 +17,7 @@ rm -rf build
 
 cmake -S . -B build \
   -DCMAKE_BUILD_TYPE=Release \
-  -DCPLEX_ROOT=/path/to/CPLEX_Studio201 #cplex路径
+  -DCPLEX_ROOT=/path/to/CPLEX_Studio201 #your cplex system path
 
 cmake --build build -j$(nproc)
 
@@ -38,5 +38,5 @@ cmake --build build -j$(nproc)
 
 ./build/bin/MTSPDS.out
 
-#data url 通过网盘分享的文件：data.zip链接: https://pan.baidu.com/s/1I21oIH5Q6w6E5WzYzk1TZA?pwd=stjj 提取码: stjj
+#Dataset URL: https://pan.baidu.com/s/1I21oIH5Q6w6E5WzYzk1TZA?pwd=stjj password: stjj
 
