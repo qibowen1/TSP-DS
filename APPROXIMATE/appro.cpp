@@ -2,32 +2,41 @@
 using namespace std;
 
 /*
-Input format:
+Input format: one CSV file containing one node per row.
 
-N q m s
-customer_1 customer_2 ... customer_q
-g
-truck_only_1 ... truck_only_g
-d
-drone_eligible_1 ... drone_eligible_d
-truck_time_matrix N x N
-drone_time_matrix N x N
+CSV columns:
+    node_id, x, y, type
 
-Node meaning:
-- depot is node 0
-- drone station is node s
-- C is the customer set
-- Cg is the truck-only customer set
-- Cd is the drone-eligible customer set
-- tg[i][j] is truck travel time
-- td[i][j] is one-way drone travel time from i to j
-- each drone delivery is a round trip, so its processing time is 2 * td[s][j]
+Node type for middle rows:
+    0 = drone-eligible customer
+    1 = truck-only customer
+    2 = drone station
+
+The first CSV row is the depot.
+The last CSV row is a repeated depot row and is ignored.
+
+Travel times:
+    truck travel time = Manhattan distance * truck_time_factor
+    drone one-way travel time = Euclidean distance * drone_time_factor
+    drone processing time for customer j = 2 * td[s][j]
+
+Algorithm:
+    The outer TD-Appro procedure follows Algorithm 1:
+    - beta_j = 2 * td[s][j] / m for drone-eligible customers;
+    - beta_j = INF for truck-only customers;
+    - enumerate T in {0} union {2 * td[s][j] : j in Cd};
+    - force customer j onto the truck whenever 2 * td[s][j] > T;
+    - solve each PC-path candidate, select the minimum obj_T;
+    - apply LPT to drone-served customers.
 
 Compile:
-g++ -std=c++17 -O2 main.cpp -o main
+    g++ -std=c++17 -O2 main_csv_append_corrected.cpp -o main
 
 Run:
-./main < input.txt
+    ./main <csv_file> <number_of_drones_m> [truck_time_factor] [drone_time_factor] [output_csv]
+
+Example:
+    ./main ali535_c.csv 5 1 0.5 result.csv
 */
 
 static const double INF = 1e100;
@@ -69,7 +78,9 @@ struct PCPathResult {
     double cost = INF;      // truck path cost
 };
 
-
+/*
+    GW-style primal-dual solver for Prize-Collecting s-0 Path.
+*/
 class GWPrizeCollectingPath {
 private:
     struct Component {
@@ -146,7 +157,7 @@ private:
         return penalty[v];
     }
 
-
+ 
     vector<int> pruneAndGetKeptNodes() {
         vector<vector<pair<int, double>>> adj(n);
 
@@ -176,7 +187,7 @@ private:
             }
         }
 
-
+      
         if (parent[dest] == -2) {
             vector<int> forced;
             forced.push_back(root);
@@ -236,9 +247,7 @@ private:
             if (kept[v]) keptNodes.push_back(v);
         }
 
-        /*
-            Robustness: all infinite-penalty customers must be kept.
-        */
+      
         vector<char> already(n, false);
         for (int v : keptNodes) already[v] = true;
 
@@ -253,9 +262,7 @@ private:
         return keptNodes;
     }
 
-    /*
-        Convert the pruned tree into an s -> 0 path.
-    */
+   
     vector<int> shortcutTreeToPath(const vector<int>& keptNodes) {
         vector<char> kept(n, false);
         for (int v : keptNodes) kept[v] = true;
@@ -285,7 +292,7 @@ private:
             }
         }
 
-  
+     
         if (par[dest] == -1) {
             vector<int> path;
             path.push_back(root);
@@ -355,9 +362,7 @@ private:
             }
         }
 
-        /*
-            Shortcut repeated vertices.
-        */
+    
         vector<char> seen(n, false);
         vector<int> path;
 
@@ -403,9 +408,7 @@ public:
         potential.assign(n, 0.0);
         forestEdges.clear();
 
-        /*
-            Initialization:
-        */
+      
         for (int v = 0; v < n; ++v) {
             Component c;
             c.alive = true;
@@ -467,14 +470,7 @@ public:
                 }
             }
 
-            /*
-                Tight edge event.
-
-                For an edge between two different current components:
-                slack = c(u,v) - potential[u] - potential[v].
-                The slack decreases at rate:
-                active(comp(u)) + active(comp(v)).
-            */
+       
             for (int u = 0; u < n; ++u) {
                 for (int v = u + 1; v < n; ++v) {
                     int cu = compId[u];
@@ -504,9 +500,7 @@ public:
 
             if (bestDelta >= INF / 2) break;
 
-            /*
-                Grow all active components by bestDelta.
-            */
+          
             for (int cid : activeComps) {
                 if (!active(cid)) continue;
 
@@ -531,10 +525,7 @@ public:
                 if (budgetComp != -1 && comps[budgetComp].alive &&
                     !comps[budgetComp].infiniteBudget &&
                     comps[budgetComp].remainingBudget <= EPS) {
-                    /*
-                        It becomes inactive automatically because active()
-                        checks remainingBudget > EPS.
-                    */
+                   
                 }
             }
         }
@@ -564,7 +555,7 @@ struct DroneSchedule {
 };
 
 struct Solution {
-    double surrogateObjective = INF; // obj_T
+    double surrogateObjective = INF; // Algorithm 1 line 13: obj_T
     double actualMakespan = INF;     // real TSP-DS objective alpha(S)
     double threshold = 0.0;
 
@@ -687,6 +678,7 @@ public:
         }
 
         /*
+            Algorithm 1, lines 1-5:
             set beta_j.
         */
         vector<double> beta(n, 0.0);
@@ -698,22 +690,21 @@ public:
                 beta[j] = INF;
             }
             else {
-                beta[j] = 2.0 * droneOneWayTime(j) / (double)m;
+                beta[j] = droneRoundTripTime(j) / (double)m;
             }
         }
 
         /*
-            enumerate T in {td[s][i] | i in Cd}.
+            Algorithm 1, line 6:
+            enumerate T in {2 * td[s][i] | i in Cd} union {0}.
+            Here droneRoundTripTime(i) = 2 * td[s][i].
         */
         vector<double> thresholds;
+        thresholds.push_back(0.0);
 
         for (int j : Cd) {
             if (!isCustomer[j]) continue;
-            thresholds.push_back(droneOneWayTime(j));
-        }
-
-        if (thresholds.empty()) {
-            thresholds.push_back(0.0);
+            thresholds.push_back(droneRoundTripTime(j));
         }
 
         sort(thresholds.begin(), thresholds.end());
@@ -728,23 +719,22 @@ public:
 
         Solution best;
 
+      
         for (double T : uniqueThresholds) {
             vector<double> betaPrime = beta;
 
             /*
-                if td[s][j] > T, force truck to visit j.
+                if 2 * td[s][j] > T, force truck to visit j.
             */
             for (int j : Cd) {
                 if (!isCustomer[j]) continue;
 
-                if (droneOneWayTime(j) > T + EPS) {
+                if (droneRoundTripTime(j) > T + EPS) {
                     betaPrime[j] = INF;
                 }
             }
 
-            /*
-                construct PC-path instance and call GW.
-            */
+         
             GWPrizeCollectingPath gw(
                 n,
                 station,
@@ -800,8 +790,7 @@ public:
         }
 
         /*
-            attach depot as first node.
-
+    
             PC-path:    s -> ... -> 0
             Truck tour: 0 -> s -> ... -> 0
         */
@@ -832,15 +821,11 @@ public:
         best.droneMakespan = maxDroneLoad(best.droneSchedule);
 
         /*
-            Since Algorithm 1 forces the truck to visit station s first,
             drone station activation time is tg[0][s].
         */
         best.droneActivationTime = tg[depot][station];
 
-        /*
-            Real TSP-DS objective:
-            alpha(S) = max{truck makespan, activation time + drone makespan}.
-        */
+      
         best.actualMakespan = max(
             best.truckTourCost,
             best.droneActivationTime + best.droneMakespan
@@ -880,7 +865,7 @@ static vector<CsvNode> readCsvNodes(const string& csvPath) {
         line = trim(line);
         if (line.empty()) continue;
 
-
+      
         for (char& ch : line) {
             if (ch == ',') ch = ' ';
         }
@@ -1057,10 +1042,7 @@ static bool fileExistsAndNotEmpty(const string& filePath) {
 
 static void printCsvHeader(ostream& out) {
     out << "Instance,"
-        << "DepotPosition,"
         << "DroneCount,"
-        << "RunId,"
-        << "Seed,"
         << "Nodes,"
         << "Customers,"
         << "DroneEligibleCustomers,"
@@ -1080,8 +1062,7 @@ static void printCsvHeader(ostream& out) {
         << "TruckTour,"
         << "TruckServedCustomers,"
         << "DroneServedCustomers,"
-        << "DroneSchedule,"
-        << "RuntimeSeconds"
+        << "DroneSchedule"
         << '\n';
 }
 
@@ -1098,8 +1079,7 @@ static void printCsvRow(
     double truckTimeFactor,
     double droneTimeFactor,
     const Solution& sol,
-    const vector<int>& originalId,
-    double runtimeSeconds
+    const vector<int>& originalId
 ) {
 
     string instance = getBaseName(csvPath);
@@ -1110,10 +1090,7 @@ static void printCsvRow(
     out << fixed << setprecision(6);
 
     out << csvEscape(instance) << ','
-        << depotPosition << ','
         << m << ','
-        << runId << ','
-        << seed << ','
         << N << ','
         << customers << ','
         << droneEligibleCustomers << ','
@@ -1133,8 +1110,7 @@ static void printCsvRow(
         << csvEscape(joinVectorByOriginalId(sol.truckTour, originalId, " ")) << ','
         << csvEscape(joinVectorByOriginalId(sol.truckServed, originalId, " ")) << ','
         << csvEscape(joinVectorByOriginalId(sol.droneServed, originalId, " ")) << ','
-        << csvEscape(droneScheduleToString(sol.droneSchedule, originalId)) << ','
-        << runtimeSeconds
+        << csvEscape(droneScheduleToString(sol.droneSchedule, originalId))
         << '\n';
 }
 
@@ -1162,9 +1138,6 @@ static void printUsage(const char* programName) {
 int main(int argc, char* argv[]) {
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
-
-    clock_t Start_time = clock();
-
 
     if (argc < 3 || argc > 6) {
         printUsage(argv[0]);
@@ -1201,7 +1174,6 @@ int main(int argc, char* argv[]) {
             cerr << "Warning: first and last depot coordinates are different. "
                  << "This implementation uses the first row as the single depot and ignores the last row.\n";
         }
-
 
         vector<CsvNode> nodes;
         nodes.reserve(rows.size() - 1);
@@ -1266,11 +1238,8 @@ int main(int argc, char* argv[]) {
 
         Solution sol = solver.solve();
 
-        clock_t End_time = clock();
-        double runtimeSeconds = double(End_time - Start_time) / CLOCKS_PER_SEC;
-
         if (outputCsvPath.empty()) {
-            // No output file is provided: print a complete CSV table to the terminal.
+     
             printCsvHeader(cout);
             printCsvRow(
                 cout,
@@ -1285,13 +1254,10 @@ int main(int argc, char* argv[]) {
                 truckTimeFactor,
                 droneTimeFactor,
                 sol,
-                originalId,
-                runtimeSeconds
+                originalId
             );
         }
         else {
-            // Output file is provided: append one result row.
-            // Header is written only once, when the file is new or empty.
             bool needHeader = !fileExistsAndNotEmpty(outputCsvPath);
 
             ofstream fout(outputCsvPath, ios::app);
@@ -1316,8 +1282,7 @@ int main(int argc, char* argv[]) {
                 truckTimeFactor,
                 droneTimeFactor,
                 sol,
-                originalId,
-                runtimeSeconds
+                originalId
             );
         }
     }
