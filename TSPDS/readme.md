@@ -1,4 +1,4 @@
-# Build and Run MNS
+# Build and Run TD-Heur
 In Linux operating system, enter the project directory, put the dataset into TSP-DS/TSPDS/data/tsp_origan, and run the program as follows:
 ```
 cd TSP-DS/TSPDS
