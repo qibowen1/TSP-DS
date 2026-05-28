@@ -3,11 +3,14 @@ The software and data in this repository are a snapshot of the software and data
 
 # Description
 Truck-drone coordination has emerged as a promising solution to meet the increasing demand of last-mile delivery.
-In this paper, we study the travelling salesman problem with a drone station (TSP-DS).
-In this problem, a truck transports goods to a drone station, after which truck and drones serve customers in parallel. The objective is to minimize the delivery makespan. 
+In this paper, we study the traveling salesman problem with a drone station (TSP-DS).
+In this problem, a truck transports goods to a drone station, after which the truck and drones serve customers in parallel, and the objective is to minimize the delivery makespan. 
 Despite its practical relevance, TSP-DS is computationally challenging and existing solution methods are limited to small-scale instances or yield inferior performance.
-In this paper, we first propose a fast approximation algorithm, named Appro. Based on a decomposition analysis. Appro guarantees a theoretical approximation ratio of 12. We then develop a multi-neighbourhood search algorithm, MNS, to further improve solution quality. MNS employs multiple complementary neighbourhood structures within a variable neighbourhood descent framework. We also introduce efficient implementation techniques to accelerate the search. Extensive computational experiments on 222 benchmark instances demonstrate the effectiveness of the proposed methods. 
-MNS consistently outperforms existing approaches in solution quality, and it effectively provides solutions for instances with more than 1,000 customer nodes.  Meanwhile, Appro quickly produces feasible solutions with a provable approximation guarantee. 
+For the first time, we propose a fast polynomial-time algorithm, \textit{TD-Appro}, with a 12-approximation ratio. The key idea is to decouple TSP-DS into two well-studied problems, both of which have efficient algorithms.
+We further develop a local search-based heuristic algorithm, \textit{TD-Heur}, to further improve solution quality. \textit{TD-Heur} employs multiple complementary neighbourhood structures within a variable neighbourhood descent framework. In addition, we devise efficient implementation techniques to accelerate the search. 
+Extensive computational experiments on 222 benchmark instances demonstrate the effectiveness of the proposed methods.
+\textit{TD-Appro} quickly produces feasible solutions. 
+Meanwhile,  \textit{TD-Heur} consistently outperforms existing approaches in solution quality. 
 
 <p align="center">
   <img src="https://github.com/qibowen1/TSP-DS/blob/main/TSPDS%20problem.png?raw=true"  alt="Sublime's custom image" />
