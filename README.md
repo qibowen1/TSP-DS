@@ -6,11 +6,11 @@ Truck-drone coordination has emerged as a promising solution to meet the increas
 In this paper, we study the traveling salesman problem with a drone station (TSP-DS).
 In this problem, a truck transports goods to a drone station, after which the truck and drones serve customers in parallel, and the objective is to minimize the delivery makespan. 
 Despite its practical relevance, TSP-DS is computationally challenging and existing solution methods are limited to small-scale instances or yield inferior performance.
-For the first time, we propose a fast polynomial-time algorithm, \textit{TD-Appro}, with a 12-approximation ratio. The key idea is to decouple TSP-DS into two well-studied problems, both of which have efficient algorithms.
-We further develop a local search-based heuristic algorithm, \textit{TD-Heur}, to further improve solution quality. \textit{TD-Heur} employs multiple complementary neighbourhood structures within a variable neighbourhood descent framework. In addition, we devise efficient implementation techniques to accelerate the search. 
+For the first time, we propose a fast polynomial-time algorithm, TD-Appro, with a 12-approximation ratio. The key idea is to decouple TSP-DS into two well-studied problems, both of which have efficient algorithms.
+We further develop a local search-based heuristic algorithm, TD-Heur, to further improve solution quality. TD-Heur employs multiple complementary neighbourhood structures within a variable neighbourhood descent framework. In addition, we devise efficient implementation techniques to accelerate the search. 
 Extensive computational experiments on 222 benchmark instances demonstrate the effectiveness of the proposed methods.
-\textit{TD-Appro} quickly produces feasible solutions. 
-Meanwhile,  \textit{TD-Heur} consistently outperforms existing approaches in solution quality. 
+TD-Appro quickly produces feasible solutions. 
+Meanwhile,  TD-Heur consistently outperforms existing approaches in solution quality. 
 
 <p align="center">
   <img src="https://github.com/qibowen1/TSP-DS/blob/main/TSPDS%20problem.png?raw=true"  alt="Sublime's custom image" />
