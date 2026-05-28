@@ -18,7 +18,7 @@ This project contains three folders which contain three algorithms: MNS (TSPDS f
 # Prerequisites
 The codes are implemented under Ubuntu 22.04. Boost C++ 17 is also required for running the codes.
 
-# Build and Run MNS
+# Build and Run TD-Heur
 In Linux operating system, enter the project directory, put the dataset into TSP-DS/TSPDS/data/tsp_origan, and run the program as follows:
 ```
 cd TSP-DS/TSPDS
@@ -34,7 +34,7 @@ cmake --build build -j$(nproc)
 ./build/bin/TSPDS.out
 ```
 
-# Build and Run Appro
+# Build and Run TD-Appro
 Compile:
 ```
 cd TSP-DS/APPROXIMATE
