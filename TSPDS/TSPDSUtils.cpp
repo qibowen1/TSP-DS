@@ -105,65 +105,6 @@ void TSPDSUtils::evaluateSolution(TSPDSSolution& solution, bool needCalDrone) {
     solution.combined_score = solution.makespan + secondary;
 }
 
-void TSPDSUtils::evaluateSolutionExactDroneByCplex(TSPDSSolution& solution) {
-    droneScheduler.scheduleDronesWithCplex(solution, graph);
-
-    // 2. 计算 makespan & 各时间指标
-    solution.makespan = calculateMakespan(solution);
-
-    double T = solution.makespan;
-    double Tt = solution.truck_completion_time;
-    double Td = solution.drone_completion_time;//现在是drone_completion_time = station_activation_time + Cmax
-    double Ta = solution.station_activation_time;
-
-    // 3. 诊断谁是瓶颈（和你原来一致）
-    if (Tt > Td) {
-        solution.diagnosis = "TRUCK_BOTTLENECK";
-    }
-    else {
-        solution.diagnosis = "DRONE_BOTTLENECK";
-    }
-
-    // ====== 4. 计算各个指标 ======
-
-    // (1) 不平衡度 [0,1]
-    double imbalance = std::fabs(Tt - Td) / T;
-
-    // (2) 卡车利用率 [0,1] —— 越接近 1 越好
-    double truck_util = Tt / T;
-    double truck_util_penalty = 1.0 - truck_util;    // 惩罚项
-
-    // (3) 无人机利用率 [0,1] —— 在可用时间段内越满越好
-    double drone_util = 0.0;
-    if (T > Ta + 1e-9 && Td > Ta) {
-        drone_util = (Td - Ta) / (T - Ta);
-        if (drone_util > 1.0) drone_util = 1.0;
-        if (drone_util < 0.0) drone_util = 0.0;
-    }
-    double drone_util_penalty = 1.0 - drone_util;    // 惩罚项
-
-    // (4) 激活时间占比 [0,1] —— 越早越好
-    double activation_ratio = Ta / T;
-
-    // ====== 5. 组合评分 ======
-    // 权重不要太大，保证 makespan 始终是主导
-    const double w_imb = 0.5;   // 不平衡度权重
-    const double w_ut = 0.2;   // 卡车利用率
-    const double w_ud = 0.2;   // 无人机利用率
-    const double w_act = 0.1;   // 激活时间
-
-    double secondary =
-        w_imb * imbalance +
-        w_ut * truck_util_penalty +
-        w_ud * drone_util_penalty +
-        w_act * activation_ratio;
-
-    // secondary 大概在 [0,1] 内，加到 T 上只作为“细微 tie-breaker”
-    solution.combined_score = solution.makespan + secondary;
-}
-
-
-
 bool TSPDSUtils::isSolutionValid(const TSPDSSolution& solution) {
     bool valid = true;
 

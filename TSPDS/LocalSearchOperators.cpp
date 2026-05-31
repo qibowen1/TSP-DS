@@ -81,14 +81,12 @@ bool LocalSearchOperators::acceptMove(const TSPDSSolution& curr,
 
     if (cand.makespan < curr.makespan - EPS_T) return true;
 
-    //if (std::fabs(cand.makespan - curr.makespan) <= EPS_T &&
-    //    cand.combined_score < curr.combined_score - EPS_S) return true;
 
     return false;
 }
 
 
-// ===== VND 主过程：邻域顺序随机 =====
+// ===== VND 主过程=====
 TSPDSSolution LocalSearchOperators::localSearch(const TSPDSSolution& start, bool afterShake)
 {
     using Clock = std::chrono::steady_clock;
@@ -99,13 +97,13 @@ TSPDSSolution LocalSearchOperators::localSearch(const TSPDSSolution& start, bool
 
     std::array<std::string, 32> opName;
     opName.fill("N/A");
-    opName[1] = "optimizeTruckBottleneck"; // 0 1 2 3 4 6 9
-    opName[2] = "optimizeDroneBottleneck";
-    opName[3] = "balanceDroneLoad";
-    opName[4] = "moveTruckNodeAcrossStation";
-    opName[5] = "applyTwoOpt";
-    opName[6] = "swapTruckDroneNodes";
-    opName[7] = "assignFarthestTruckToDrone";
+    opName[1] = "applyTruckRouteSwap";
+    opName[2] = "applyTwoOpt";
+    opName[3] = "moveTruckNodeAcrossStation";
+    opName[4] = "balanceDroneLoad";
+    opName[5] = "optimizeTruckBottleneck";
+    opName[6] = "optimizeDroneBottleneck";
+    opName[7] = "swapTruckDroneNodes";
 
     // --- 包装：计时 + 计数 ---
     auto runOp = [&](int opId, const auto& fn) -> std::pair<TSPDSSolution, double> {
@@ -128,20 +126,16 @@ TSPDSSolution LocalSearchOperators::localSearch(const TSPDSSolution& start, bool
             const double eps = 1e-9;
             bool droneBottleneck = (s.drone_completion_time > s.truck_completion_time + eps);
 
-            // 你当前启用的 neighborhoods 集合：{0,1,2,3,4,6,9}
-            // 规则：若两者相等（<=eps）也走 truck-first
             if (!droneBottleneck) {
                 // truck-first：
-                return { 0,4, 9, 3, 2, 6, 1};//{ 0,4, 9, 3, 2, 6, 1};
+                return { 1, 2, 3, 5, 7 };
             }
             else {
                 // drone-first
-                return { 1,2, 6, 0, 3, 9, 4 };//{ 1,2, 6, 0, 3, 9, 4 }
+                return { 3, 4, 6, 7 };
             }
             };
         std::vector<int> neighborhoods = buildNeighborhoodOrder(current);
-		//随机领域顺序
-		//std::shuffle(neighborhoods.begin(), neighborhoods.end(), gen);
         // ---- first-accept ----
         for (int i = 0; i < (int)neighborhoods.size();) {
             TSPDSSolution cand = current;
@@ -149,20 +143,14 @@ TSPDSSolution LocalSearchOperators::localSearch(const TSPDSSolution& start, bool
             double last_op_ms = 0.0;
             switch (nt) {
                 
-            case 0: {
-                auto ret = runOp(nt, [&]() { return optimizeTruckBottleneck(cand); });
-                cand = std::move(ret.first);
-                last_op_ms = ret.second;
-                break;
-            }
             case 1: {
-                auto ret = runOp(nt, [&]() { return optimizeDroneBottleneck(cand); });
+                auto ret = runOp(nt, [&]() { return applyTruckRouteSwap(cand); });
                 cand = std::move(ret.first);
                 last_op_ms = ret.second;
                 break;
             }
             case 2: {
-                auto ret = runOp(nt, [&]() { return balanceDroneLoad(cand); });
+                auto ret = runOp(nt, [&]() { return applyTwoOpt(cand); });
                 cand = std::move(ret.first);
                 last_op_ms = ret.second;
                 break;
@@ -174,19 +162,25 @@ TSPDSSolution LocalSearchOperators::localSearch(const TSPDSSolution& start, bool
                 break;
             }
             case 4: {
-                auto ret = runOp(nt, [&]() { return applyTwoOpt(cand); });
+                auto ret = runOp(nt, [&]() { return balanceDroneLoad(cand); });
+                cand = std::move(ret.first);
+                last_op_ms = ret.second;
+                break;
+            }
+            case 5: {
+                auto ret = runOp(nt, [&]() { return optimizeTruckBottleneck(cand); });
                 cand = std::move(ret.first);
                 last_op_ms = ret.second;
                 break;
             }
             case 6: {
-                auto ret = runOp(nt, [&]() { return swapTruckDroneNodes(cand); });
+                auto ret = runOp(nt, [&]() { return optimizeDroneBottleneck(cand); });
                 cand = std::move(ret.first);
                 last_op_ms = ret.second;
                 break;
             }
-            case 9: {
-                auto ret = runOp(nt, [&]() { return assignFarthestTruckToDrone(cand, 20, /*firstImprove=*/true); });
+            case 7: {
+                auto ret = runOp(nt, [&]() { return swapTruckDroneNodes(cand); });
                 cand = std::move(ret.first);
                 last_op_ms = ret.second;
                 break;
@@ -195,7 +189,6 @@ TSPDSSolution LocalSearchOperators::localSearch(const TSPDSSolution& start, bool
                 break;
             }
 
-            // --- evaluate 也计时（建议计，因为 evaluate 可能很重） ---
             auto te0 = Clock::now();
 			utils.evaluateSolution(cand, /*needCalDrone=*/true);
             auto te1 = Clock::now();
@@ -215,7 +208,7 @@ TSPDSSolution LocalSearchOperators::localSearch(const TSPDSSolution& start, bool
                     st[nt].accept_total_ms += (last_op_ms + eval_ms);
                 }
 
-                //i = 0; 
+                break;
             }
             else {
                 i++;
@@ -490,6 +483,80 @@ TSPDSSolution LocalSearchOperators::applyTwoOpt(TSPDSSolution& solution)
     else {
         return original;
     }
+}
+
+
+/**
+ * TSwap: exchange two truck-served nodes on the same side of the drone station.
+ * The depot and drone station are separators, so swaps are only tried inside
+ * depot..station or station..depot segments.
+ */
+TSPDSSolution LocalSearchOperators::applyTruckRouteSwap(TSPDSSolution& solution)
+{
+    TSPDSSolution base = solution;
+    if (base.makespan <= 0.0) utils.evaluateSolution(base, /*needCalDrone=*/true);
+
+    const std::vector<int>& route = base.truck_route;
+    const int n = static_cast<int>(route.size());
+    if (n < 5) return base;
+    if (route.front() != graph.depot || route.back() != graph.depot) return base;
+
+    int stationIndex = -1;
+    for (int i = 0; i < n; ++i) {
+        if (route[i] == graph.drone_station) {
+            stationIndex = i;
+            break;
+        }
+    }
+    if (stationIndex < 0) return base;
+
+    auto isSwappableTruckNode = [&](int pos) -> bool {
+        if (pos <= 0 || pos >= n - 1) return false;
+        int node = route[pos];
+        if (node == graph.depot || node == graph.drone_station) return false;
+        if (!base.served_by_truck.empty() && !base.served_by_truck[node]) return false;
+        return true;
+        };
+
+    auto betterThan = [&](const TSPDSSolution& a, const TSPDSSolution& b) -> bool {
+        if (a.makespan < b.makespan - 1e-9) return true;
+        if (std::fabs(a.makespan - b.makespan) <= 1e-9 &&
+            a.combined_score < b.combined_score - 1e-9) return true;
+        if (std::fabs(a.makespan - b.makespan) <= 1e-9 &&
+            std::fabs(a.combined_score - b.combined_score) <= 1e-9 &&
+            a.truck_completion_time < b.truck_completion_time - 1e-9) return true;
+        return false;
+        };
+
+    TSPDSSolution best = base;
+    bool foundImprovement = false;
+
+    auto trySegment = [&](int firstPos, int lastPos) {
+        if (lastPos - firstPos + 1 < 2) return;
+
+        for (int i = firstPos; i <= lastPos - 1; ++i) {
+            if (!isSwappableTruckNode(i)) continue;
+
+            for (int j = i + 1; j <= lastPos; ++j) {
+                if (!isSwappableTruckNode(j)) continue;
+
+                TSPDSSolution cand = base;
+                std::swap(cand.truck_route[i], cand.truck_route[j]);
+
+                utils.evaluateSolution(cand, /*needCalDrone=*/false);
+
+                if (betterThan(cand, best)) {
+                    best = std::move(cand);
+                    foundImprovement = true;
+                }
+            }
+        }
+        };
+
+    trySegment(1, stationIndex - 1);
+    trySegment(stationIndex + 1, n - 2);
+
+    return foundImprovement ? best : base;
 }
 
 
@@ -1007,69 +1074,6 @@ bool LocalSearchOperators::moveNodeBetweenDrones(TSPDSSolution& sol, int node, i
     return true;
 }
 
-//远的给无人机
-TSPDSSolution LocalSearchOperators::assignFarthestTruckToDrone(TSPDSSolution& solution,
-    int maxAcceptedMoves,
-    bool firstImprove)
-{
-    TSPDSSolution base = solution;
-    if (base.makespan <= 0.0) utils.evaluateSolution(base, /*needCalDrone=*/true);
-
-    // 基本防御
-    if (base.truck_route.size() < 4) return base;
-    if (base.truck_route.front() != graph.depot || base.truck_route.back() != graph.depot) return base;
-    if (std::count(base.truck_route.begin(), base.truck_route.end(), graph.drone_station) != 1) return base;
-
-    const int S = graph.drone_station;
-    if (S < 0) return base;
-
-    // 1) 收集候选：truck_route 内、卡车服务、且可无人机服务
-    struct Cand { int node; double keyRT; };
-    std::vector<Cand> cands;
-    cands.reserve(base.truck_route.size());
-
-    for (int k = 1; k + 1 < (int)base.truck_route.size(); ++k) {
-        int v = base.truck_route[k];
-        if (v == graph.depot || v == graph.drone_station) continue;
-
-        if (!base.served_by_truck.empty() && !base.served_by_truck[v]) continue;
-        if (!graph.is_drone_eligible.empty() && !graph.is_drone_eligible[v]) continue;
-        if (!graph.is_truck_only.empty() && graph.is_truck_only[v]) continue; // truck-only 禁止转无人机
-
-        double rt = graph.drone_time[S][v] + graph.drone_time[v][S];
-
-        cands.push_back({ v, rt });
-    }
-    if (cands.empty()) return base;
-
-    // 2) 远->近排序（往返越大越远）
-    std::sort(cands.begin(), cands.end(),
-        [](const Cand& a, const Cand& b) { return a.keyRT > b.keyRT; });
-
-    // 3) 依次尝试 truck->drone（只接受 makespan 变好）
-    TSPDSSolution current = base;
-    int accepted = 0;
-
-    for (const auto& cd : cands) {
-        if (maxAcceptedMoves > 0 && accepted >= maxAcceptedMoves) break;
-
-        int node = cd.node;
-
-        TSPDSSolution test = current;
-
-        if (!utils.reassignTruckToDrone(test, node)) continue;
-
-        utils.evaluateSolution(test, /*needCalDrone=*/true);
-
-        if (acceptMove(current, test)) {
-            current = test;
-            ++accepted;
-            if (firstImprove) return current;
-        }
-    }
-
-    return current;
-}
 
 
 

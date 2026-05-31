@@ -7,9 +7,6 @@ struct TSPDSSolution {
 	int find_best_time = 0; //记录找到最优解所用的时间
     int dorne_visit_dep = 0;
     int total_iter = 0;
-	int cplex_find_best_time = -1; //记录cplex找到最优解所用的时间
-	bool cplex_feasible_solution = false; //解是否是可行解
-	string cplex_feasible_info = ""; //解的诊断信息
     int init_Id = 0;
 
     std::vector<int> pos_in_truck; //卡车节点位置映射
@@ -41,14 +38,6 @@ struct TSPDSSolution {
     double utilization_ratio; // 资源利用率
     std::string diagnosis; // 问题诊断信息
 
-    // ✅新增：CPLEX 求解信息
-    double cplex_best_bound = std::numeric_limits<double>::infinity();   // Best Bound（下界）
-    double cplex_best_integer = std::numeric_limits<double>::infinity(); // Best Integer（最好可行解）
-    double cplex_mip_gap = std::numeric_limits<double>::infinity();      // 相对gap（可选）
-    int    cplex_status = -1;                                            // (可选) IloCplex::Status 转 int
-    std::string cplex_status_name = "Unknown";   // CPLEX状态名称
-    std::string cplex_result_type = "NOT_RUN";   // 简单求解结论
-
     void initialize(int size) {
         served_by_truck.resize(size, false); 
         served_by_drone.resize(size, false);
@@ -58,14 +47,6 @@ struct TSPDSSolution {
         time_imbalance = 0.0;
         utilization_ratio = 0.0;
         diagnosis = "";
-        cplex_best_bound = std::numeric_limits<double>::infinity();
-        cplex_best_integer = std::numeric_limits<double>::infinity();
-        cplex_mip_gap = std::numeric_limits<double>::infinity();
-        cplex_status = -1;
-        cplex_status_name = "Unknown";
-        cplex_result_type = "NOT_RUN";
-        cplex_feasible_solution = false;
-        cplex_feasible_info = "";
     }
 
     // 新的目标函数计算

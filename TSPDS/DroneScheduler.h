@@ -10,7 +10,6 @@ public:
     // 无人机任务调度主函数
     static void scheduleDrones(TSPDSSolution& solution, const TSPDSGraph& graph);
 
-    void scheduleDronesWithCplex(TSPDSSolution& solution, const TSPDSGraph& graph);
 
     // COMBINE算法实现
     static std::pair<std::vector<std::vector<int>>, double>

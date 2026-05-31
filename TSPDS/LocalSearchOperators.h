@@ -1,5 +1,6 @@
 #pragma once
 #include "TSPDSUtils.h"
+#include <array>
 
 class LocalSearchOperators {
 private:
@@ -29,6 +30,9 @@ public:
 
     // 2-opt”≈ªØ
     TSPDSSolution applyTwoOpt(TSPDSSolution& solution);
+
+    // Truck route same-side node swap (TSwap)
+    TSPDSSolution applyTruckRouteSwap(TSPDSSolution& solution);
 
     TSPDSSolution destroyRepairLNS(TSPDSSolution& solution);
 

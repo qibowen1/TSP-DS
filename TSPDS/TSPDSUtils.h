@@ -45,7 +45,6 @@ public:
     // 解评估函数
     void evaluateSolution(TSPDSSolution& solution,  bool needCalDrone = true);
 
-    void evaluateSolutionExactDroneByCplex(TSPDSSolution& solution);
 
     // 解验证函数
     bool isSolutionValid(const TSPDSSolution& solution);

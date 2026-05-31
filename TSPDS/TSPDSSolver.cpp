@@ -125,10 +125,9 @@ TSPDSSolution TSPDSSolver::solve(double F2Best) {
         if (accepted) {
             currentSolution = localSolution;
 
-            if (currentSolution.makespan < bestSolution.makespan) {
+                if (currentSolution.makespan < bestSolution.makespan) {
                 utils.optimizeTruckRouteWithLKHIntern(currentSolution);
                 TSPDSSolution temp = currentSolution;
-                //utils.evaluateSolutionExactDroneByCplex(temp);
                 if (temp.drone_completion_time < currentSolution.drone_completion_time) {
                     currentSolution = temp;
                 }
@@ -180,7 +179,6 @@ TSPDSSolution TSPDSSolver::solve(double F2Best) {
 
     bestSolution.total_iter = iteration;
     utils.optimizeTruckRouteWithLKHIntern(bestSolution);
-    //utils.evaluateSolutionExactDroneByCplex(bestSolution);
     return bestSolution;
 }
 

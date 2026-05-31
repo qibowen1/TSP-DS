@@ -1,7 +1,5 @@
 ﻿// main.cpp (or TSPDS-main.cpp) —— 已改为 Linux/Windows 通用相对路径版本
 #include "TSPDSSolver.h"
-#include "CplexF2Solver.h"
-#include "CplexBendersSolver.h"
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -350,33 +348,6 @@ static inline uint32_t mix32(uint64_t x) {
     x ^= x >> 33;
     return (uint32_t)(x & 0xFFFFFFFFu);
 }
-
-struct ExactResult {
-    bool ok = false;
-    double makespan = -1;
-    std::string status = "Unknown";
-
-    double Tt = -1, Ta = -1, Td = -1;
-    double best_integer = 0, best_bound = 0, mip_gap = 0;
-    int find_best_time_sec = 0;
-
-    bool feasible_solution = false;
-    std::string feasible_info = "";
-
-    // 新增
-    int cplex_status = -1;
-    std::string cplex_status_name = "Unknown";
-    std::string cplex_result_type = "NOT_RUN";
-};
-
-static inline std::string exactKey(const std::string& tsp_path,
-    const std::string& depot,
-    int drone_count)
-{
-    std::string instance_base = fs::path(tsp_path).stem().string();
-    return instance_base + "_" + depot + "_" + std::to_string(drone_count);
-}
-
 
 // 数据结构存储最优解信息
 struct OptimalSolution {
@@ -1029,80 +1000,7 @@ void processMurrayFolder(const std::string& folderPath,
             early_stop = optimal_makespan;
         }
 
-        // -------- CPLEX F2 求解（Murray，与第一份代码保持一致）--------
-        TSPDSSolution sol_f2;
-        bool f2_ok = false;
-        double f2_stop = early_stop;
-        {
-            CplexF2Solver::Params p;
-            p.time_limit_sec = 300;
-            p.threads = 8;
-            p.mip_gap = 0.0;
-            p.verbose = true;
-
-            CplexF2Solver solver_cplex(p);
-            f2_ok = solver_cplex.solve(graph, sol_f2);
-
-            if (f2_ok) {
-                cout << "[CPLEX F2] T=" << sol_f2.makespan
-                    << "  Tt=" << sol_f2.truck_completion_time
-                    << "  Ta=" << sol_f2.station_activation_time
-                    << "  Td=" << sol_f2.drone_completion_time << endl;
-
-                if (sol_f2.makespan > 0 && std::isfinite(sol_f2.makespan)) {
-                    f2_stop = sol_f2.makespan;
-                }
-                else if (sol_f2.cplex_best_integer > 0 && std::isfinite(sol_f2.cplex_best_integer)) {
-                    f2_stop = sol_f2.cplex_best_integer;
-                }
-
-                double f2_gap_percent = -1.0;
-                if (optimal_makespan > 0) {
-                    f2_gap_percent = ((sol_f2.makespan - optimal_makespan) / optimal_makespan) * 100.0;
-                }
-
-                auto f2_end_time = chrono::high_resolution_clock::now();
-                auto f2_duration = chrono::duration_cast<chrono::milliseconds>(f2_end_time - start_time);
-
-                std::string truckStrF2 = joinInts(sol_f2.truck_route, "->");
-                std::string droneStrF2 = formatDroneAssignments(sol_f2.drone_assignments);
-
-                {
-                    std::lock_guard<std::mutex> lock(result_mutex);
-                    result_file << instance_base << ","
-                        << "MURRAY_F2" << ","
-                        << drone_count << ","
-                        << run_id << ","
-                        << seed << ","
-                        << graph.nodes.size() << ","
-                        << sol_f2.makespan << ","
-                        << f2_duration.count() / 1000.0 << ","
-                        << optimal_makespan << ","
-                        << f2_gap_percent << ","
-                        << sol_f2.max_resAt << ","
-                        << sol_f2.total_iter << ","
-                        << sol_f2.truck_completion_time << ","
-                        << sol_f2.drone_completion_time << ","
-                        << sol_f2.station_activation_time << ","
-                        << sol_f2.dorne_visit_dep << ","
-                        << sol_f2.cplex_best_integer << ","
-                        << sol_f2.cplex_best_bound << ","
-                        << sol_f2.cplex_mip_gap << ","
-                        << sol_f2.cplex_find_best_time << ","
-                        << sol_f2.cplex_feasible_solution << ","
-                        << csvEscape(sol_f2.cplex_feasible_info) << ","
-                        << csvEscape(truckStrF2) << ","
-                        << csvEscape(droneStrF2) << ","
-                        << sol_f2.init_Id
-                        << "\n";
-                }
-            }
-            else {
-                cout << "[CPLEX F2] solve failed." << endl;
-            }
-        }
-
-        TSPDSSolution solution = solver.solve(f2_stop);
+        TSPDSSolution solution = solver.solve(early_stop);
 
         auto end_time = chrono::high_resolution_clock::now();
         auto duration = chrono::duration_cast<chrono::milliseconds>(end_time - start_time);
@@ -1141,12 +1039,6 @@ void processMurrayFolder(const std::string& folderPath,
                 << solution.drone_completion_time << ","
                 << solution.station_activation_time << ","
                 << solution.dorne_visit_dep << ","
-                << solution.cplex_best_integer << ","
-                << solution.cplex_best_bound << ","
-                << solution.cplex_mip_gap << ","
-                << solution.cplex_find_best_time << ","
-                << solution.cplex_feasible_solution << ","
-                << csvEscape(solution.cplex_feasible_info) << ","
                 << csvEscape(truckStr) << ","
                 << csvEscape(droneStr) << ","
                 << solution.init_Id
@@ -1172,8 +1064,7 @@ void processTSPFile(const string& filepath,
     int run_id,
     ofstream& result_file,
     const map<string, OptimalSolution>& optimalSolutions,
-    std::mutex& result_mutex,
-    const std::unordered_map<std::string, ExactResult>& exactMap)
+    std::mutex& result_mutex)
 {
     auto start_time = chrono::high_resolution_clock::now();
 
@@ -1246,15 +1137,6 @@ void processTSPFile(const string& filepath,
         cout << "Computation time: " << duration.count() / 1000.0 << " s" << endl;
 
         // -------- 查最优对比 --------
-
-        std::string k = exactKey(filepath, depot_position, drone_count);
-        ExactResult ex;
-        auto itex = exactMap.find(k);
-        if (itex != exactMap.end()) ex = itex->second;
-
-        //// 用 CPLEX 的 makespan 当 optimal_makespan（若 ok）
-
-        // -------- 查最优对比 --------
         string search_key2 = instance_name + "_" + depot_pos + "_" + to_string(drone_count);
 
         double optimal_makespan = -1;
@@ -1270,18 +1152,6 @@ void processTSPFile(const string& filepath,
         else {
             cout << "No optimal solution found in database for this configuration." << endl;
         }
-
-        // 同步 cplex 信息到 solution
-        solution.cplex_status = ex.cplex_status;
-        solution.cplex_status_name = ex.cplex_status_name;
-        solution.cplex_result_type = ex.cplex_result_type;
-        solution.cplex_best_integer = ex.best_integer;
-        solution.cplex_best_bound = ex.best_bound;
-        solution.cplex_mip_gap = ex.mip_gap;
-        solution.cplex_find_best_time = ex.find_best_time_sec;
-        solution.cplex_feasible_solution = ex.feasible_solution;
-        solution.cplex_feasible_info = ex.feasible_info;
-
 
         // -------- 写 CSV（必须锁）--------
         std::string truckStr = joinInts(solution.truck_route, "->");
@@ -1306,15 +1176,6 @@ void processTSPFile(const string& filepath,
                 << solution.drone_completion_time << ","
                 << solution.station_activation_time << ","
                 << solution.dorne_visit_dep << ","
-                << solution.cplex_status << ","
-                << csvEscape(solution.cplex_status_name) << ","
-                << csvEscape(solution.cplex_result_type) << ","
-                << solution.cplex_best_integer << ","
-                << solution.cplex_best_bound << ","
-                << solution.cplex_mip_gap << ","
-                << solution.cplex_find_best_time << ","
-                << solution.cplex_feasible_solution << ","
-                << csvEscape(solution.cplex_feasible_info) << ","
                 << csvEscape(truckStr) << ","
                 << csvEscape(droneStr) << ","
                 << solution.init_Id
@@ -1356,8 +1217,6 @@ int main() {
     vector<int> drone_counts = { 1,3,5 }; // 1,3,5,7,9
     vector<string> depot_positions = { "L" }; // "1" "C", "L"
     bool isSmallInstance = false; // Murray小实例=true；TSPLIB=false
-    bool isRunF2Cplex = false; // 是否运行 F2 求解 Exact
-    bool isRunBenders = false; // 是否运行 Benders 求解 Exact
 
     // ✅ 相对路径：以“程序工作目录”为基准  
     fs::path input_dir = fs::path("data") / "tsp_origan";
@@ -1467,152 +1326,6 @@ int main() {
         }
     }
 
-    // ========== 预计算：每个 (instance, depot, drone_count) 的 CPLEX 只跑一次 ==========
-    std::unordered_map<std::string, ExactResult> exactMap;
-    exactMap.reserve(tsp_files.size() * depot_positions.size() * drone_counts.size());
-
-    if (!isSmallInstance && isRunF2Cplex) {
-        for (const std::string& filename : tsp_files) {
-            for (const std::string& depot_position : depot_positions) {
-                for (int dc : drone_counts) {
-
-                    std::string k = exactKey(filename, depot_position, dc);
-                    if (exactMap.find(k) != exactMap.end()) continue;
-
-                    ExactResult ex;
-                    try {
-                        TSPDSGraph graph = parseTSPLIBFile(filename, dc, 0.5,
-                            std::numeric_limits<double>::max(), depot_position);
-
-                        CplexF2Solver::Params p;
-                        p.time_limit_sec = 3600;
-                        p.threads = 8;
-                        p.mip_gap = 0.0;
-                        p.verbose = true;
-
-                        CplexF2Solver solver_cplex(p);
-                        TSPDSSolution sol_cplex;
-                        bool ok = solver_cplex.solve(graph, sol_cplex);
-
-                        ex.ok = ok;
-                        if (ok) {
-                            ex.makespan = sol_cplex.makespan;
-                            ex.Tt = sol_cplex.truck_completion_time;
-                            ex.Ta = sol_cplex.station_activation_time;
-                            ex.Td = sol_cplex.drone_completion_time;
-                            ex.best_integer = sol_cplex.cplex_best_integer;
-                            ex.best_bound = sol_cplex.cplex_best_bound;
-                            ex.mip_gap = sol_cplex.cplex_mip_gap;
-
-                            std::cout << "[CPLEX once] " << k
-                                << " T=" << ex.makespan
-                                << " Tt=" << ex.Tt
-                                << " Ta=" << ex.Ta
-                                << " Td=" << ex.Td
-                                << "\n";
-                        }
-                        else {
-                            std::cout << "[CPLEX once] " << k << " solve failed.\n";
-                        }
-                    }
-                    catch (const std::exception& e) {
-                        ex.ok = false;
-                        std::cerr << "[CPLEX once] " << k << " exception: " << e.what() << "\n";
-                    }
-
-                    exactMap.emplace(k, ex);
-                }
-            }
-        }
-    }
-
-    if (!isSmallInstance && isRunBenders) {
-        for (const std::string& filename : tsp_files) {
-            for (const std::string& depot_position : depot_positions) {
-                for (int dc : drone_counts) {
-
-                    std::string k = exactKey(filename, depot_position, dc);
-                    if (exactMap.find(k) != exactMap.end()) continue;
-
-                    ExactResult ex;
-                    try {
-
-                        //TSPDSGraph graph = parseOriginCsvFile(filename, dc, 0.5, std::numeric_limits<double>::max());
-
-                        //>280个点的 数据以及解析图
-                        TSPDSGraph graph = parseTSPLIBFile(filename, dc, 0.5, std::numeric_limits<double>::max(), depot_position);
-
-                        CplexBendersSolver::Params p;
-                        p.time_limit_sec = 7200;
-                        p.threads = 16;
-                        p.mip_gap = 0.0;
-                        p.verbose = true;
-
-                        CplexBendersSolver solver_bendercplex(p);
-                        TSPDSSolution sol_cplex;
-                        bool ok = solver_bendercplex.solve(graph, sol_cplex);
-
-                        ex.ok = ok;
-                        if (ok) {
-                            ex.ok = ok;
-                            ex.makespan = sol_cplex.makespan;
-                            ex.Tt = sol_cplex.truck_completion_time;
-                            ex.Ta = sol_cplex.station_activation_time;
-                            ex.Td = sol_cplex.drone_completion_time;
-
-                            ex.best_integer = sol_cplex.cplex_best_integer;
-                            ex.best_bound = sol_cplex.cplex_best_bound;
-                            ex.mip_gap = sol_cplex.cplex_mip_gap;
-                            ex.find_best_time_sec = sol_cplex.cplex_find_best_time;
-
-                            ex.feasible_solution = sol_cplex.cplex_feasible_solution;
-                            ex.feasible_info = sol_cplex.cplex_feasible_info;
-
-                            ex.cplex_status = sol_cplex.cplex_status;
-                            ex.cplex_status_name = sol_cplex.cplex_status_name;
-                            ex.cplex_result_type = sol_cplex.cplex_result_type;
-
-                            std::cout << "[CPLEX once] " << k
-                                << " T=" << ex.makespan
-                                << " Tt=" << ex.Tt
-                                << " Ta=" << ex.Ta
-                                << " Td=" << ex.Td
-                                << "\n";
-                        }
-                        else {
-                            ex.ok = ok;
-                            ex.makespan = sol_cplex.makespan;
-                            ex.Tt = sol_cplex.truck_completion_time;
-                            ex.Ta = sol_cplex.station_activation_time;
-                            ex.Td = sol_cplex.drone_completion_time;
-
-                            ex.best_integer = sol_cplex.cplex_best_integer;
-                            ex.best_bound = sol_cplex.cplex_best_bound;
-                            ex.mip_gap = sol_cplex.cplex_mip_gap;
-                            ex.find_best_time_sec = sol_cplex.cplex_find_best_time;
-
-                            ex.feasible_solution = sol_cplex.cplex_feasible_solution;
-                            ex.feasible_info = sol_cplex.cplex_feasible_info;
-
-                            ex.cplex_status = sol_cplex.cplex_status;
-                            ex.cplex_status_name = sol_cplex.cplex_status_name;
-                            ex.cplex_result_type = sol_cplex.cplex_result_type;
-                            std::cout << "[CPLEX once] " << k << " solve failed.\n";
-                        }
-                    }
-                    catch (const std::exception& e) {
-                        ex.ok = false;
-                        std::cerr << "[CPLEX once] " << k << " exception: " << e.what() << "\n";
-                    }
-
-                    exactMap.emplace(k, ex);
-                }
-            }
-        }
-    }
-
-
-
     std::cout << "jobs=" << jobs.size() << "\n";
 
     // ========== fork 出 WORKERS 个子进程 ==========
@@ -1635,9 +1348,6 @@ int main() {
             wf << "Instance,DepotPosition,DroneCount,RunId,Seed,Nodes,"
                 "Makespan,Time,OptimalMakespan,GapPercent,"
                 "Find_Max_ResIter,Total_Iter,truck_complete_time,drone_complete_time,drone_active_time,Drone_dopsition,"
-                "cplex_status,cplex_status_name,cplex_result_type,"
-                "cplex_best_integer,cplex_best_bound,cplex_mip_gap,cplex_find_best_time,"
-                "cplex_feasible_solution,cplex_feasible_info,"
                 "TruckRoute,DroneTasks,Init_id\n";
 
             std::mutex dummy_mutex; // 进程内锁即可（其实单文件写不冲突）
@@ -1670,8 +1380,7 @@ int main() {
                         job.run_id,
                         wf,
                         optimalSolutions,
-                        dummy_mutex,
-                        exactMap);
+                        dummy_mutex);
                 }
             }
 
@@ -1708,9 +1417,6 @@ int main() {
         "Instance,DepotPosition,DroneCount,RunId,Seed,Nodes,"
         "Makespan,Time,OptimalMakespan,GapPercent,"
         "Find_Max_ResIter,Total_Iter,truck_complete_time,drone_complete_time,drone_active_time,Drone_dopsition,"
-        "cplex_status,cplex_status_name,cplex_result_type,"
-        "cplex_best_integer,cplex_best_bound,cplex_mip_gap,cplex_find_best_time,"
-        "cplex_feasible_solution,cplex_feasible_info,"
         "TruckRoute,DroneTasks,Init_id";
 
     result_file << header << "\n";
@@ -1744,7 +1450,7 @@ int main() {
 
             // 再解析做 best 统计
             auto cells = splitCsvRow(line);
-            if (cells.size() < 25) continue; // 列数不够就跳过（避免异常行）
+            if (cells.size() < 19) continue; // 列数不够就跳过（避免异常行）
 
             const std::string& instance = cells[0];
             const std::string& droneCountStr = cells[2];
@@ -1768,7 +1474,7 @@ int main() {
 
     // --- 在表格末尾追加“汇总区” ---
     {
-        std::vector<std::string> mark(25, "");
+        std::vector<std::string> mark(19, "");
         mark[0] = "SUMMARY";
         mark[1] = "BEST_PER_(Instance,DroneCount)";
         result_file << joinCsvRow(mark) << "\n";
@@ -1796,7 +1502,7 @@ int main() {
     // 输出每个组合的 best 行：把 DepotPosition 改成 "BEST" 方便识别
     for (auto& it : items) {
         auto cells = it.br.cells;
-        if (cells.size() < 25) continue;
+        if (cells.size() < 19) continue;
         cells[1] = "BEST";  // DepotPosition 列，用来标记这是汇总行
         result_file << joinCsvRow(cells) << "\n";
     }
