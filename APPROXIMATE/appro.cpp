@@ -30,13 +30,13 @@ Algorithm:
     - apply LPT to drone-served customers.
 
 Compile:
-    g++ -std=c++17 -O2 main_csv_append_corrected.cpp -o main
+    g++ -std=c++17 -O2 appro.cpp -o appro
 
 Run:
-    ./main <csv_file> <number_of_drones_m> [truck_time_factor] [drone_time_factor] [output_csv]
+    ./appro <csv_file> <number_of_drones_m> [truck_time_factor] [drone_time_factor] [output_csv]
 
 Example:
-    ./main ali535_c.csv 5 1 0.5 result.csv
+    ./appro ali535_c.csv 5 1 0.5 result.csv
 */
 
 static const double INF = 1e100;
@@ -1062,7 +1062,8 @@ static void printCsvHeader(ostream& out) {
         << "TruckTour,"
         << "TruckServedCustomers,"
         << "DroneServedCustomers,"
-        << "DroneSchedule"
+        << "DroneSchedule,"
+        << "RuntimeSeconds"
         << '\n';
 }
 
@@ -1079,7 +1080,8 @@ static void printCsvRow(
     double truckTimeFactor,
     double droneTimeFactor,
     const Solution& sol,
-    const vector<int>& originalId
+    const vector<int>& originalId,
+    double runtimeSeconds
 ) {
 
     string instance = getBaseName(csvPath);
@@ -1110,7 +1112,8 @@ static void printCsvRow(
         << csvEscape(joinVectorByOriginalId(sol.truckTour, originalId, " ")) << ','
         << csvEscape(joinVectorByOriginalId(sol.truckServed, originalId, " ")) << ','
         << csvEscape(joinVectorByOriginalId(sol.droneServed, originalId, " ")) << ','
-        << csvEscape(droneScheduleToString(sol.droneSchedule, originalId))
+        << csvEscape(droneScheduleToString(sol.droneSchedule, originalId)) << ','
+        << runtimeSeconds
         << '\n';
 }
 
@@ -1138,6 +1141,8 @@ static void printUsage(const char* programName) {
 int main(int argc, char* argv[]) {
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
+
+    clock_t Start_time = clock();
 
     if (argc < 3 || argc > 6) {
         printUsage(argv[0]);
@@ -1238,6 +1243,9 @@ int main(int argc, char* argv[]) {
 
         Solution sol = solver.solve();
 
+        clock_t End_time = clock();
+        double runtimeSeconds = double(End_time - Start_time) / CLOCKS_PER_SEC;
+
         if (outputCsvPath.empty()) {
      
             printCsvHeader(cout);
@@ -1254,7 +1262,8 @@ int main(int argc, char* argv[]) {
                 truckTimeFactor,
                 droneTimeFactor,
                 sol,
-                originalId
+                originalId,
+                runtimeSeconds
             );
         }
         else {
@@ -1282,7 +1291,8 @@ int main(int argc, char* argv[]) {
                 truckTimeFactor,
                 droneTimeFactor,
                 sol,
-                originalId
+                originalId,
+                runtimeSeconds
             );
         }
     }
