@@ -24,7 +24,6 @@ set(TSPDS_SOURCES
     InitialSolutionGenerator.cpp
     LocalSearchOperators.cpp
     PerturbationOperators.cpp
-    TSPDS-main-anly.cpp
     TSPDSSolver.cpp
     TSPDSUtils.cpp
     VNSLogger.cpp

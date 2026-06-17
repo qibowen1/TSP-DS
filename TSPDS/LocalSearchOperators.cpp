@@ -86,13 +86,15 @@ bool LocalSearchOperators::acceptMove(const TSPDSSolution& curr,
 }
 
 
-// ===== VND 主过程=====
+// ===== Adaptive probabilistic local search =====
 TSPDSSolution LocalSearchOperators::localSearch(const TSPDSSolution& start, bool afterShake)
 {
+    (void)afterShake;
     using Clock = std::chrono::steady_clock;
 
     TSPDSSolution current = start;
-    // --- 统计：0..10 ---
+    if (current.makespan <= 0.0) utils.evaluateSolution(current, /*needCalDrone=*/true);
+
     std::array<OpPerfStat, 32> st;
 
     std::array<std::string, 32> opName;
@@ -105,7 +107,6 @@ TSPDSSolution LocalSearchOperators::localSearch(const TSPDSSolution& start, bool
     opName[6] = "optimizeDroneBottleneck";
     opName[7] = "swapTruckDroneNodes";
 
-    // --- 包装：计时 + 计数 ---
     auto runOp = [&](int opId, const auto& fn) -> std::pair<TSPDSSolution, double> {
         auto t0 = Clock::now();
         TSPDSSolution out = fn();
@@ -116,105 +117,93 @@ TSPDSSolution LocalSearchOperators::localSearch(const TSPDSSolution& start, bool
         return { std::move(out), op_ms };
         };
 
-    bool moved = true;
+    const std::vector<int> neighborhoods = { 1, 2, 3, 4, 5, 6, 7 };
+    std::vector<double> improvementCount(neighborhoods.size(), 0.0);
+    int noImprove = 0;
+    const int maxNoImprove = std::max(1, params.local_search_no_improve_limit);
 
+    while (noImprove < maxNoImprove) {
+        std::vector<double> neighborhoodWeights(improvementCount.size(), 1.0);
+        const double maxCount = *std::max_element(improvementCount.begin(), improvementCount.end());
+        for (int i = 0; i < static_cast<int>(improvementCount.size()); ++i) {
+            neighborhoodWeights[i] = std::exp(improvementCount[i] - maxCount);
+        }
 
+        std::discrete_distribution<int> pick(neighborhoodWeights.begin(), neighborhoodWeights.end());
+        const int idx = pick(gen);
+        const int nt = neighborhoods[idx];
 
-    while (moved) {
-        moved = false;
-        auto buildNeighborhoodOrder = [&](const TSPDSSolution& s) -> std::vector<int> {
-            const double eps = 1e-9;
-            bool droneBottleneck = (s.drone_completion_time > s.truck_completion_time + eps);
+        TSPDSSolution cand = current;
+        double last_op_ms = 0.0;
 
-            if (!droneBottleneck) {
-                // truck-first：
-                return { 1, 2, 3, 5, 7 };
-            }
-            else {
-                // drone-first
-                return { 3, 4, 6, 7 };
-            }
-            };
-        std::vector<int> neighborhoods = buildNeighborhoodOrder(current);
-        // ---- first-accept ----
-        for (int i = 0; i < (int)neighborhoods.size();) {
-            TSPDSSolution cand = current;
-            int nt = neighborhoods[i];
-            double last_op_ms = 0.0;
-            switch (nt) {
-                
-            case 1: {
-                auto ret = runOp(nt, [&]() { return applyTruckRouteSwap(cand); });
-                cand = std::move(ret.first);
-                last_op_ms = ret.second;
-                break;
-            }
-            case 2: {
-                auto ret = runOp(nt, [&]() { return applyTwoOpt(cand); });
-                cand = std::move(ret.first);
-                last_op_ms = ret.second;
-                break;
-            }
-            case 3: {
-                auto ret = runOp(nt, [&]() { return moveTruckNodeAcrossStation(cand, /*firstImprove=*/true); });
-                cand = std::move(ret.first);
-                last_op_ms = ret.second;
-                break;
-            }
-            case 4: {
-                auto ret = runOp(nt, [&]() { return balanceDroneLoad(cand); });
-                cand = std::move(ret.first);
-                last_op_ms = ret.second;
-                break;
-            }
-            case 5: {
-                auto ret = runOp(nt, [&]() { return optimizeTruckBottleneck(cand); });
-                cand = std::move(ret.first);
-                last_op_ms = ret.second;
-                break;
-            }
-            case 6: {
-                auto ret = runOp(nt, [&]() { return optimizeDroneBottleneck(cand); });
-                cand = std::move(ret.first);
-                last_op_ms = ret.second;
-                break;
-            }
-            case 7: {
-                auto ret = runOp(nt, [&]() { return swapTruckDroneNodes(cand); });
-                cand = std::move(ret.first);
-                last_op_ms = ret.second;
-                break;
-            }
-            default:
-                break;
-            }
+        switch (nt) {
+        case 1: {
+            auto ret = runOp(nt, [&]() { return applyTruckRouteSwap(cand); });
+            cand = std::move(ret.first);
+            last_op_ms = ret.second;
+            break;
+        }
+        case 2: {
+            auto ret = runOp(nt, [&]() { return applyTwoOpt(cand); });
+            cand = std::move(ret.first);
+            last_op_ms = ret.second;
+            break;
+        }
+        case 3: {
+            auto ret = runOp(nt, [&]() { return moveTruckNodeAcrossStation(cand, /*firstImprove=*/true); });
+            cand = std::move(ret.first);
+            last_op_ms = ret.second;
+            break;
+        }
+        case 4: {
+            auto ret = runOp(nt, [&]() { return balanceDroneLoad(cand); });
+            cand = std::move(ret.first);
+            last_op_ms = ret.second;
+            break;
+        }
+        case 5: {
+            auto ret = runOp(nt, [&]() { return optimizeTruckBottleneck(cand); });
+            cand = std::move(ret.first);
+            last_op_ms = ret.second;
+            break;
+        }
+        case 6: {
+            auto ret = runOp(nt, [&]() { return optimizeDroneBottleneck(cand); });
+            cand = std::move(ret.first);
+            last_op_ms = ret.second;
+            break;
+        }
+        case 7: {
+            auto ret = runOp(nt, [&]() { return swapTruckDroneNodes(cand); });
+            cand = std::move(ret.first);
+            last_op_ms = ret.second;
+            break;
+        }
+        default:
+            noImprove++;
+            continue;
+        }
 
-            auto te0 = Clock::now();
-			utils.evaluateSolution(cand, /*needCalDrone=*/true);
-            auto te1 = Clock::now();
-            double eval_ms = toMs(te1 - te0);
+        auto te0 = Clock::now();
+        utils.evaluateSolution(cand, /*needCalDrone=*/true);
+        auto te1 = Clock::now();
+        double eval_ms = toMs(te1 - te0);
 
-            if (last_op_ms > 0.0) {
-                st[nt].eval_ms += eval_ms;
-                st[nt].total_ms += (last_op_ms + eval_ms);
-            }
+        st[nt].eval_ms += eval_ms;
+        st[nt].total_ms += (last_op_ms + eval_ms);
 
-            if (acceptMove(current, cand)) {
-                current = cand;
-                moved = true;
-
-                if (last_op_ms > 0.0) {
-                    st[nt].accepts++;
-                    st[nt].accept_total_ms += (last_op_ms + eval_ms);
-                }
-
-                break;
-            }
-            else {
-                i++;
-            }
+        if (acceptMove(current, cand)) {
+            current = std::move(cand);
+            st[nt].accepts++;
+            st[nt].accept_total_ms += (last_op_ms + eval_ms);
+            improvementCount[idx] += 1.0;
+            noImprove = 0;
+        }
+        else {
+            noImprove++;
         }
     }
+
     return current;
 }
 
@@ -1073,7 +1062,6 @@ bool LocalSearchOperators::moveNodeBetweenDrones(TSPDSSolution& sol, int node, i
     sol.node_to_drone[node] = to;
     return true;
 }
-
 
 
 

@@ -7,7 +7,7 @@ class SetPartitioningPolisher {
 public:
     explicit SetPartitioningPolisher(const MTSPDSGraph& g) : graph(g) {}
 
-    // return false if no CPLEX (or not solved), caller can fallback
+    // Returns false when no feasible column combination is found.
     bool solve(const std::vector<MTSPDSSolution>& pool,
         const MTSPDSSolution& incumbent,
         MTSPDSSolution& out);

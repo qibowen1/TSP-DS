@@ -637,13 +637,14 @@ MTSPDSSolution TwoPhaseMatheuristic::improveSolution(const MTSPDSSolution& start
 
 
 MTSPDSSolution TwoPhaseMatheuristic::polish(const MTSPDSSolution& bestFromPhase1) {
-    // Phase 2: set-partitioning MILP polish from pool (paper line 11):contentReference[oaicite:17]{index=17}:contentReference[oaicite:18]{index=18}
-    // If CPLEX available: solve; else fallback to best in pool.
+    // Phase 2: set-partitioning-style polish from the solution pool.
     SetPartitioningPolisher pol(graph);
     MTSPDSSolution out;
-    if (pol.solve(pool, bestFromPhase1, out)) { //退化成单卡车，单无人机站时，这个操作其实没有优化
+    if (pol.solve(pool, bestFromPhase1, out)) {
         evaluate(out);
-        return out; 
+        if (out.makespan <= bestFromPhase1.makespan + 1e-12) {
+            return out;
+        }
     }
 
     // fallback: best among pool and bestFromPhase1

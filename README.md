@@ -54,8 +54,7 @@ cd TSP-DS/MTSPDS
 rm -rf build
 
 cmake -S . -B build \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DCPLEX_ROOT=/path/to/CPLEX_Studio1201
+  -DCMAKE_BUILD_TYPE=Release
 
 cmake --build build -j$(nproc)
 

@@ -220,13 +220,7 @@ bool VNSLogger::initializeLogging() {
 
     log_data["algorithm_parameters"] = {
         {"max_iterations", params.max_run_time},
-        {"max_run_time", params.max_run_time},
-        {"shaking_number", params.shaking_number},
-        {"LS_number", params.LS_number},
-        {"truck_convert_maxNode", params.truck_convert_maxNode},
-        {"drone_convert_maxNode", params.drone_convert_maxNode},
-        {"max_swap_attempts", params.max_swap_attempts},
-        {"droneStation_maxMoveDistance", params.droneStation_maxMoveDistance}
+        {"max_run_time", params.max_run_time}
     };
 
     log_data["performance_metrics"] = json::object();

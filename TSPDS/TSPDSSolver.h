@@ -146,6 +146,36 @@ public:
     // 主求解方法
     TSPDSSolution solve(double F2Best);
 
+    enum class CrossoverPartType {
+        PreStation,
+        PostStation,
+        DroneSchedule
+    };
+
+    enum class TruckCompletionSide {
+        Anywhere,
+        BeforeStation,
+        AfterStation
+    };
+
+    struct CrossoverPartSpec {
+        const TSPDSSolution* solution = nullptr;
+        CrossoverPartType type = CrossoverPartType::PreStation;
+    };
+
+    std::vector<TSPDSSolution> generateInitialPopulation();
+    std::pair<int, int> selectParents(const std::vector<TSPDSSolution>& population, std::mt19937& rng);
+    std::vector<TSPDSSolution> crossover(const TSPDSSolution& a, const TSPDSSolution& b);
+    TSPDSSolution makeCrossoverChild(const CrossoverPartSpec& first,
+        const CrossoverPartSpec& second,
+        bool preferFirst);
+    void insertMissingTruckNode(TSPDSSolution& solution, int node, TruckCompletionSide side);
+    void updatePopulation(std::vector<TSPDSSolution>& population,
+        const std::vector<TSPDSSolution>& candidates,
+        const TSPDSSolution& bestSolution);
+    int solutionHammingDistance(const TSPDSSolution& a, const TSPDSSolution& b) const;
+    std::string solutionSignature(const TSPDSSolution& solution) const;
+
 
     //tools
 
