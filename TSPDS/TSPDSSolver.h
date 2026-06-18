@@ -173,7 +173,7 @@ public:
     void updatePopulation(std::vector<TSPDSSolution>& population,
         const std::vector<TSPDSSolution>& candidates,
         const TSPDSSolution& bestSolution);
-    int solutionHammingDistance(const TSPDSSolution& a, const TSPDSSolution& b) const;
+    double solutionHammingDistance(const TSPDSSolution& a, const TSPDSSolution& b) const;
     std::string solutionSignature(const TSPDSSolution& solution) const;
 
 

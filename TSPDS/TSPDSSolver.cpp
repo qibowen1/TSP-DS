@@ -127,6 +127,87 @@ namespace {
         }
         return -1;
     }
+
+    std::vector<std::unordered_set<int>> buildDroneTaskSets(
+        const TSPDSSolution& solution,
+        const TSPDSGraph& graph) {
+        const int m = std::max(0, graph.drone_count);
+        std::vector<std::unordered_set<int>> sets(m);
+
+        for (int d = 0; d < m; ++d) {
+            auto it = solution.drone_assignments.find(d);
+            if (it == solution.drone_assignments.end()) continue;
+
+            for (int node : it->second) {
+                if (!isDroneEligibleNode(graph, node)) continue;
+                if (node < static_cast<int>(solution.served_by_drone.size()) &&
+                    !solution.served_by_drone[node]) {
+                    continue;
+                }
+                sets[d].insert(node);
+            }
+        }
+
+        return sets;
+    }
+
+    double jaccardDistance(
+        const std::unordered_set<int>& lhs,
+        const std::unordered_set<int>& rhs) {
+        if (lhs.empty() && rhs.empty()) return 0.0;
+
+        int intersectionSize = 0;
+        const auto& smaller = (lhs.size() <= rhs.size()) ? lhs : rhs;
+        const auto& larger = (lhs.size() <= rhs.size()) ? rhs : lhs;
+
+        for (int node : smaller) {
+            if (larger.find(node) != larger.end()) ++intersectionSize;
+        }
+
+        const int unionSize = static_cast<int>(lhs.size() + rhs.size()) - intersectionSize;
+        if (unionSize == 0) return 0.0;
+        return 1.0 - static_cast<double>(intersectionSize) / static_cast<double>(unionSize);
+    }
+
+    double symmetricDroneAssignmentDistance(
+        const TSPDSSolution& a,
+        const TSPDSSolution& b,
+        const TSPDSGraph& graph) {
+        const int m = std::max(0, graph.drone_count);
+        if (m == 0) return 0.0;
+
+        std::vector<std::unordered_set<int>> aSets = buildDroneTaskSets(a, graph);
+        std::vector<std::unordered_set<int>> bSets = buildDroneTaskSets(b, graph);
+
+        std::vector<std::vector<double>> cost(m, std::vector<double>(m, 0.0));
+        for (int i = 0; i < m; ++i) {
+            for (int j = 0; j < m; ++j) {
+                cost[i][j] = jaccardDistance(aSets[i], bSets[j]);
+            }
+        }
+
+        const int maskCount = 1 << m;
+        std::vector<double> dp(maskCount, std::numeric_limits<double>::infinity());
+        dp[0] = 0.0;
+
+        for (int mask = 0; mask < maskCount; ++mask) {
+            if (!std::isfinite(dp[mask])) continue;
+
+            int matched = 0;
+            for (int bit = 0; bit < m; ++bit) {
+                if (mask & (1 << bit)) ++matched;
+            }
+            if (matched >= m) continue;
+
+            for (int j = 0; j < m; ++j) {
+                if (mask & (1 << j)) continue;
+                const int nextMask = mask | (1 << j);
+                dp[nextMask] = std::min(dp[nextMask], dp[mask] + cost[matched][j]);
+            }
+        }
+
+        return dp[maskCount - 1];
+    }
 }
 
 std::vector<TSPDSSolution> TSPDSSolver::generateInitialPopulation() {
@@ -439,7 +520,7 @@ std::vector<TSPDSSolution> TSPDSSolver::crossover(const TSPDSSolution& a, const 
     return children;
 }
 
-int TSPDSSolver::solutionHammingDistance(const TSPDSSolution& a, const TSPDSSolution& b) const {
+double TSPDSSolver::solutionHammingDistance(const TSPDSSolution& a, const TSPDSSolution& b) const {
     const int n = static_cast<int>(graph.nodes.size());
     std::vector<int> ea(n, -2), eb(n, -2);
 
@@ -456,12 +537,16 @@ int TSPDSSolver::solutionHammingDistance(const TSPDSSolution& a, const TSPDSSolu
         if (node < static_cast<int>(b.served_by_drone.size()) && b.served_by_drone[node]) eb[node] = -1;
     }
 
-    int dist = 0;
+    double dist = 0.0;
     for (int node = 0; node < n; ++node) {
         if (node == graph.depot) continue;
+        const bool aDrone = (node < static_cast<int>(a.served_by_drone.size()) && a.served_by_drone[node]);
+        const bool bDrone = (node < static_cast<int>(b.served_by_drone.size()) && b.served_by_drone[node]);
+        if (aDrone && bDrone) continue;
         if (ea[node] != eb[node]) ++dist;
     }
-    return dist;
+
+    return dist + symmetricDroneAssignmentDistance(a, b, graph);
 }
 
 std::string TSPDSSolver::solutionSignature(const TSPDSSolution& solution) const {
@@ -495,42 +580,59 @@ void TSPDSSolver::updatePopulation(std::vector<TSPDSSolution>& population,
 
     std::vector<double> objectives(pool.size(), 0.0);
     std::vector<double> diversities(pool.size(), 0.0);
+    std::vector<double> imbalances(pool.size(), 0.0);
     double objMin = std::numeric_limits<double>::infinity();
     double objMax = -std::numeric_limits<double>::infinity();
+    double imbalanceMax = 0.0;
 
     for (int i = 0; i < static_cast<int>(pool.size()); ++i) {
         objectives[i] = pool[i].makespan;
         objMin = std::min(objMin, objectives[i]);
         objMax = std::max(objMax, objectives[i]);
+
+        imbalances[i] = std::fabs(pool[i].truck_completion_time - pool[i].drone_completion_time);
+        imbalanceMax = std::max(imbalanceMax, imbalances[i]);
     }
 
     double divMin = std::numeric_limits<double>::infinity();
     double divMax = -std::numeric_limits<double>::infinity();
     for (int i = 0; i < static_cast<int>(pool.size()); ++i) {
-        int minDist = std::numeric_limits<int>::max();
+        double minDist = std::numeric_limits<double>::infinity();
         for (int j = 0; j < static_cast<int>(pool.size()); ++j) {
             if (i == j) continue;
             minDist = std::min(minDist, solutionHammingDistance(pool[i], pool[j]));
         }
-        if (minDist == std::numeric_limits<int>::max()) minDist = 0;
-        diversities[i] = static_cast<double>(minDist);
+        if (!std::isfinite(minDist)) minDist = 0.0;
+        diversities[i] = minDist;
         divMin = std::min(divMin, diversities[i]);
         divMax = std::max(divMax, diversities[i]);
     }
 
     std::vector<double> fitness(pool.size(), 0.0);
+    constexpr double bMin = 0.05;
+    constexpr double bMax = 0.15;
     for (int i = 0; i < static_cast<int>(pool.size()); ++i) {
-        double objectiveScore = 1.0;
+        double objectiveNorm = 0.0;
         if (objMax > objMin + SOLVER_EPS) {
-            objectiveScore = (objMax - objectives[i]) / (objMax - objMin);
+            objectiveNorm = (objectives[i] - objMin) / (objMax - objMin);
         }
 
-        double diversityScore = 1.0;
+        double diversityNorm = 0.0;
         if (divMax > divMin + SOLVER_EPS) {
-            diversityScore = (diversities[i] - divMin) / (divMax - divMin);
+            diversityNorm = (diversities[i] - divMin) / (divMax - divMin);
         }
 
-        fitness[i] = 0.5 * objectiveScore + 0.5 * diversityScore;
+        double imbalanceNorm = 0.0;
+        if (imbalanceMax > SOLVER_EPS) {
+            imbalanceNorm = imbalances[i] / imbalanceMax;
+        }
+
+        const double aWeight = objectiveNorm;
+        const double bWeight = bMin + (bMax - bMin) * imbalanceNorm;
+        fitness[i] =
+            aWeight * objectiveNorm +
+            (1.0 - aWeight) * diversityNorm +
+            bWeight * imbalanceNorm;
     }
 
     std::vector<int> order(pool.size());
