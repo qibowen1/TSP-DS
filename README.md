@@ -4,8 +4,11 @@ The software and data in this repository are a snapshot of the software and data
 # Description
 Truck-drone coordination has emerged as a promising solution to meet the increasing demand of last-mile delivery.
 We study the travelling salesman problem with a drone station (TSP-DS), where a truck transports goods to a drone station, after which the truck and drones serve customers in parallel, and the objective is to minimize the delivery makespan. Such settings generalize the parallel drone scheduling travelling salesman problem (PDSTSP). They arise in delivery systems where drone infrastructure has already been deployed and daily operational decisions require coordinating truck routing and drone scheduling.
-In this paper, we first show that TSP-DS admits a decomposition framework with provable guarantees, leading to the first approximation algorithm, TD-Appro, with an approximation ratio of $5$. 
-To further improve solution quality, we develop a practical heuristic search algorithm, TD-Heur, that adaptively focuses the search on the current bottleneck.
+
+To solve TSP-DS, we propose two algorithms.
+We first propose a memetic search algorithm, TD-Heur, that consists of a novel bottleneck-guided local search, a novel component-based crossover operator and a population management mechanism tailored to TSP-DS.
+Theoretically, we further show that TSP-DS can be decomposed into two well-studied subproblems with provable guarantees. Based on the decomposition, we develop the first approximation algorithm, TD-Appro, with an approximation ratio of $5$.
+
 Computational experiments demonstrate that TD-Appro quickly produces feasible solutions with quality guarantees. 
 Meanwhile, TD-Heur achieves the best known value on 164 instances and obtains new upper bounds on 50 instances.
 
