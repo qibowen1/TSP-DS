@@ -3,14 +3,11 @@ The software and data in this repository are a snapshot of the software and data
 
 # Description
 Truck-drone coordination has emerged as a promising solution to meet the increasing demand of last-mile delivery.
-In this paper, we study the traveling salesman problem with a drone station (TSP-DS).
-In this problem, a truck transports goods to a drone station, after which the truck and drones serve customers in parallel, and the objective is to minimize the delivery makespan. 
-Despite its practical relevance, TSP-DS is computationally challenging and existing solution methods are limited to small-scale instances or yield inferior performance.
-For the first time, we propose a fast polynomial-time algorithm, TD-Appro, with a 12-approximation ratio. The key idea is to decouple TSP-DS into two well-studied problems, both of which have efficient algorithms.
-We further develop a local search-based heuristic algorithm, TD-Heur, to further improve solution quality. TD-Heur employs multiple complementary neighbourhood structures within a variable neighbourhood descent framework. In addition, we devise efficient implementation techniques to accelerate the search. 
-Extensive computational experiments on 222 benchmark instances demonstrate the effectiveness of the proposed methods.
-TD-Appro quickly produces feasible solutions. 
-Meanwhile,  TD-Heur consistently outperforms existing approaches in solution quality. 
+We study the travelling salesman problem with a drone station (TSP-DS), where a truck transports goods to a drone station, after which the truck and drones serve customers in parallel, and the objective is to minimize the delivery makespan. Such settings generalize the parallel drone scheduling travelling salesman problem (PDSTSP). They arise in delivery systems where drone infrastructure has already been deployed and daily operational decisions require coordinating truck routing and drone scheduling.
+In this paper, we first show that TSP-DS admits a decomposition framework with provable guarantees, leading to the first approximation algorithm, TD-Appro, with an approximation ratio of $5$. 
+To further improve solution quality, we develop a practical heuristic search algorithm, TD-Heur, that adaptively focuses the search on the current bottleneck.
+Computational experiments demonstrate that TD-Appro quickly produces feasible solutions with quality guarantees. 
+Meanwhile, TD-Heur achieves the best known value on 164 instances and obtains new upper bounds on 50 instances.
 
 <p align="center">
   <img src="https://github.com/qibowen1/TSP-DS/blob/main/TSPDS%20problem.png?raw=true"  alt="Sublime's custom image" />
