@@ -1,1 +1,15 @@
+# Build and Run TD-Heur
 
+In Linux operating system, enter the project directory, put the dataset into best/data/tsp_origan, and run the program as follows:
+
+```bash
+cd /home/zhenxiangxv/TSPDS/TSP-DS-main/best
+
+rm -rf build
+
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+cmake --build build -j$(nproc)
+
+./build/bin/TSPDS.out
+```
