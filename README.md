@@ -49,7 +49,7 @@ g++ -std=c++17 -O2 appro.cpp -o appro
 # Build and Run TPLS
 In Linux operating system, enter the project directory, put the dataset into TSP-DS/MTSPDS/data/tsp_origan, and run the program as follows:
 ```
-cd TSP-DS/MTSPDS
+cd TSP-DS/TPLS
 
 rm -rf build
 
