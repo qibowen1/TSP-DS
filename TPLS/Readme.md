@@ -10,5 +10,5 @@ cmake -S . -B build \
 
 cmake --build build -j$(nproc)
 
-./build/bin/TPLS.out
+./build/bin/MTSPDS.out
 ```
