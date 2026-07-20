@@ -3,7 +3,7 @@
 In Linux operating system, enter the project directory, put the dataset into best/data/tsp_origan, and run the program as follows:
 
 ```bash
-cd /home/zhenxiangxv/TSPDS/TSP-DS-main/best
+cd TSP-DS/TSPDS
 
 rm -rf build
 
