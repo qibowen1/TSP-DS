@@ -16,7 +16,7 @@ Meanwhile, TD-Heur achieves the best known value on 164 instances and obtains ne
   <img src="https://github.com/qibowen1/TSP-DS/blob/main/TSPDS%20problem.png?raw=true"  alt="Sublime's custom image" />
 </p>
 
-This project contains three folders which contain three algorithms: TD-Heur (TSPDS folder), TD-Appro (APPROXIMATE folder) and TPLS (MTSPDS folder).
+This project contains three folders which contain three algorithms: TD-Heur (TSPDS folder), TD-Appro (APPROXIMATE folder) and TPLS (TPLS folder).
 
 # Prerequisites
 The codes are implemented under Ubuntu 22.04. Boost C++ 17 is also required for running the codes.
