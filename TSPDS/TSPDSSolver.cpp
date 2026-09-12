@@ -843,8 +843,7 @@ void TSPDSSolver::updatePopulation(std::vector<TSPDSSolution>& population,
         const double balanceWeight = bMin + (bMax - bMin) * imbalanceNorm;
         fitness[i] =
             0.80 * objectiveNorm -
-            balanceWeight * imbalanceNorm -
-            0.10 * diversityNorm;
+            0.20 * diversityNorm;
     }
 
     std::vector<int> order(pool.size());
