@@ -1,4 +1,4 @@
-# Large-Scale Travelling Salesman Problem with Drone Station: Approximation and Heuristic Algorithms
+# Large-Scale Travelling Salesman Problem with Drone Station: Heuristic and Approximation Algorithms
 The software and data in this repository are a snapshot of the software and data that were used in the research reported on in the paper.
 
 # Description
